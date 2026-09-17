@@ -1,0 +1,6 @@
+users.db
+.env
+venv
+.mypy_cache
+__pycache__/
+*.pyc
