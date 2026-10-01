@@ -1,7 +1,10 @@
 users.db
 db.sqlite3
 .env
+migrations
 venv
+123.py
+reserved
 .mypy_cache
 __pycache__/
 *.pyc
