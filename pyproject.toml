@@ -1,2 +1,0 @@
-[tool.tortoise]
-tortoise_orm = "app.database.config.TORTOISE_ORM"

@@ -1,6 +1,6 @@
 from tortoise import Tortoise
 
-from app.database.config import TORTOISE_ORM
+from .config import TORTOISE_ORM
 
 
 async def init_db():

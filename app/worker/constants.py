@@ -1,0 +1,5 @@
+VPN_QUEUE = 'vpn_tasks'
+ZIP_QUEUE = 'zapret_tasks'
+RESPONSE_QUEUE = 'vpn_responses'
+ZIP_RESPONSE_QUEUE = 'zapret_responses'
+CLIENT_ENDPOINT = 'clients'
