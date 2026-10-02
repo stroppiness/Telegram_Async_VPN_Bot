@@ -28,6 +28,9 @@ async def get_zapret_release(
     message: aio_pika.IncomingMessage,
     channel: aio_pika.Channel
 ):
+    """
+    Функция для получения файла при помощи GitHub API.
+    """
     async with message.process():
         try:
             payload = json.loads(message.body.decode())
@@ -115,6 +118,10 @@ async def create_user_config(
     message: aio_pika.IncomingMessage,
     channel: aio_pika.Channel
 ):
+    """
+    Функция для обработки данных для получения конфига, обращение к API,
+    а также передача в соответствующий канал rabbitMQ
+    """
     async with message.process():
         try:
 

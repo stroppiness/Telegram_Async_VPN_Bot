@@ -22,6 +22,9 @@ bot = Bot(token=TOKEN)
 
 
 async def send_zapret_zip(message: aio_pika.IncomingMessage):
+    """
+    Функция для получения документа из rabbitMQ и отправки ответа пользователю.
+    """
     logger.info(
         f'Получено сообщение из {ZIP_RESPONSE_QUEUE}, '
         f'delivery_tag={message.delivery_tag}'
@@ -60,6 +63,10 @@ async def send_zapret_zip(message: aio_pika.IncomingMessage):
 
 
 async def send_vpn_config(message: aio_pika.IncomingMessage):
+    """
+    Функция для получения конфигурации из rabbitMQ и
+    отправки ответа пользователю.
+    """
     logger.info(
         f'Получено сообщение из {RESPONSE_QUEUE}, '
         f'delivery_tag={message.delivery_tag}'
