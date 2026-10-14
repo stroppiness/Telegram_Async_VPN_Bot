@@ -22,7 +22,7 @@ jobs:
       - name: Push to DockerHub
         uses: docker/build-push-action@v4
         with:
-          context: ./app/worker/Dockerfile
+          context: ./app/worker
           push: true
           tags: stroppiness/vpn_worker:latest
 
@@ -42,7 +42,7 @@ jobs:
       - name: Push to DockerHub
         uses: docker/build-push-action@v4
         with:
-          context: ./app/sender/Dockerfile
+          context: ./app/sender
           push: true
           tags: stroppiness/vpn_sender:latest
 
@@ -62,7 +62,7 @@ jobs:
       - name: Push to DockerHub
         uses: docker/build-push-action@v4
         with:
-          context: ./app/gateway/Dockerfile
+          context: ./app/gateway
           push: true
           tags: stroppiness/vpn_gateway:latest
 
