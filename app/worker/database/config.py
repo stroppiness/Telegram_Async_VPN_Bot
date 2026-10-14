@@ -1,12 +1,12 @@
 TORTOISE_ORM = {
     "connections": {
-        "default": "sqlite://db.sqlite3",
+        "default": "sqlite://database/db.sqlite3",
     },
     "apps": {
         "models": {
-            "models": ["app.worker.database.models"],
+            "models": ["worker.database.models"],
             "default_connection": "default",
-            "migrations": "app.worker.database.migrations",
+            "migrations": "worker.database.migrations",
         },
     },
 }

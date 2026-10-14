@@ -3,6 +3,7 @@ db.sqlite3
 .env
 migrations
 venv
+docker-compose-local.yml
 123.py
 reserved
 .mypy_cache

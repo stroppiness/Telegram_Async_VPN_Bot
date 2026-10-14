@@ -94,14 +94,14 @@ async def send_vpn_config(message: aio_pika.IncomingMessage):
             await bot.send_message(
                 chat_id=telegram_id,
                 text=(
-                    'С момена последнего запроса ещё не прошло трёх дней! '
+                    'С момента последнего запроса ещё не прошло трёх дней! '
                     'Ты сможешь запросить ещё один ключ,'
                     'когда три дня истекут 🧐'
                 )
             )
             return
 
-        if error in ('delete_failed', 'create_failed'):
+        if vpn_key is None or error in ('delete_failed', 'create_failed'):
             await bot.send_message(
                 chat_id=telegram_id,
                 text=(
@@ -109,6 +109,7 @@ async def send_vpn_config(message: aio_pika.IncomingMessage):
                     'всё обязательно получится!'
                 )
             )
+            return
 
         await bot.send_message(
             chat_id=telegram_id,

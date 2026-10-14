@@ -253,7 +253,7 @@ async def create_user_config(
 
                     except aiohttp.ClientError as e:
                         logger.error(f'Ошибка сетевого подключения: {e}')
-                        return
+                        response_data['error'] = 'create_failed'
 
             await channel.default_exchange.publish(
                 aio_pika.Message(

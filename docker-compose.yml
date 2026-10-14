@@ -1,0 +1,47 @@
+volumes:
+  worker_db:
+  rabbitmq:
+
+services:
+  rabbitmq:
+    image: rabbitmq:4-management
+    environment:
+      RABBITMQ_DEFAULT_USER: vpn_app
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "15672:15672"
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  worker:
+    image: stroppiness/vpn_worker:latest
+    env_file: .env
+    volumes:
+      - worker_db:/app/database
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  gateway:
+    image: stroppiness/vpn_gateway:latest
+    env_file: .env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  sender:
+    image: stroppiness/vpn_sender:latest
+    env_file: .env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+networks:
+  default:
+    name: vpn_network
+    external: true
