@@ -37,6 +37,7 @@ async def request_vpn_key(
 
 async def request_zapret_zip(
     telegram_id,
+    username,
     rabbit_channel: aio_pika.Channel
 ):
     await rabbit_channel.default_exchange.publish(
