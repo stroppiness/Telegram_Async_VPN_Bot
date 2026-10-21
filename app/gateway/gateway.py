@@ -50,6 +50,7 @@ async def get_zapret_command(message, rabbit_channel: aio_pika.Channel):
 
     await request_zapret_zip(
         telegram_id=message.from_user.id,
+        username=message.from_user.username,
         rabbit_channel=rabbit_channel
         )
 
@@ -67,6 +68,7 @@ async def get_zapret_zip(
 
     await request_zapret_zip(
         telegram_id=callback.from_user.id,
+        username=callback.from_user.username,
         rabbit_channel=rabbit_channel
         )
 

@@ -42,7 +42,8 @@ async def request_zapret_zip(
     await rabbit_channel.default_exchange.publish(
         aio_pika.Message(
             body=json.dumps({
-                'telegram_id': telegram_id
+                'telegram_id': telegram_id,
+                'username': username,
             }).encode(),
             delivery_mode=aio_pika.DeliveryMode.PERSISTENT
         ),

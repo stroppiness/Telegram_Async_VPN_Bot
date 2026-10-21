@@ -26,7 +26,8 @@ RABBITMQ_URL = os.getenv('RABBITMQ_URL')
 
 async def get_zapret_release(
     message: aio_pika.IncomingMessage,
-    channel: aio_pika.Channel
+    channel: aio_pika.Channel,
+    session
 ):
     """
     Функция для получения файла при помощи GitHub API.
@@ -65,35 +66,32 @@ async def get_zapret_release(
 
             headers = {'User-Agent': 'Telegram-Bot-App'}
 
-            async with aiohttp.ClientSession(
-                headers=headers
-            ) as session:
-                async with session.get(api_url) as response:
-                    if response.status != 200:
-                        logger.error(
-                            f'GitHub API вернул статус {response.status}'
-                        )
-                        response_data['error'] = 'github_error'
+            async with session.get(api_url, headers=headers) as response:
+                if response.status != 200:
+                    logger.error(
+                        f'GitHub API вернул статус {response.status}'
+                    )
+                    response_data['error'] = 'github_error'
 
-                    else:
-                        release_data = await response.json()
+                else:
+                    release_data = await response.json()
 
-                        assets = release_data.get('assets', [])
+                    assets = release_data.get('assets', [])
 
-                        for asset in assets:
-                            if asset.get(
-                                'name', ''
-                            ).endswith('.zip'):
-                                response_data['version'] = (
-                                    release_data.get('tag_name')
-                                )
-                                response_data['download_url'] = (
-                                    asset.get('browser_download_url')
-                                )
-                                response_data['file_name'] = (
-                                    asset.get('name')
-                                )
-                                break
+                    for asset in assets:
+                        if asset.get(
+                            'name', ''
+                        ).endswith('.zip'):
+                            response_data['version'] = (
+                                release_data.get('tag_name')
+                            )
+                            response_data['download_url'] = (
+                                asset.get('browser_download_url')
+                            )
+                            response_data['file_name'] = (
+                                asset.get('name')
+                            )
+                            break
 
             await channel.default_exchange.publish(
                 aio_pika.Message(
@@ -116,7 +114,8 @@ async def get_zapret_release(
 
 async def create_user_config(
     message: aio_pika.IncomingMessage,
-    channel: aio_pika.Channel
+    channel: aio_pika.Channel,
+    session
 ):
     """
     Функция для обработки данных для получения конфига, обращение к API,
@@ -180,31 +179,70 @@ async def create_user_config(
 
             if can_create:
 
-                async with aiohttp.ClientSession(headers=headers) as session:
-                    try:
+                try:
 
-                        async with session.get(
+                    async with session.get(
+                        f'{API_URL}/{CLIENT_ENDPOINT}',
+                        headers=headers
+                    ) as response:
+                        data = await response.json()
+
+                        client_id = None
+
+                        for client in data['items']:
+                            if client['username'] == username:
+                                client_id = client['peers'][0]['id']
+                                break
+
+                        delete_payload['clientId'] = client_id
+
+                    async with session.delete(
+                        f'{API_URL}/{CLIENT_ENDPOINT}',
+                        headers=headers,
+                        json=delete_payload,
+                    ) as response:
+
+                        delete_success = True
+
+                        if response.status not in (200, 400, 404):
+                            error_text = await response.text()
+                            logger.error(
+                                f'Ошибка сервера:{
+                                    response.status
+                                }: '
+                                f'{error_text}'
+                            )
+                            response_data['error'] = 'delete_failed'
+
+                            delete_success = False
+
+                    if delete_success is True:
+
+                        async with session.post(
                             f'{API_URL}/{CLIENT_ENDPOINT}',
-                        ) as response:
-                            data = await response.json()
-
-                            client_id = None
-
-                            for client in data['items']:
-                                if client['username'] == username:
-                                    client_id = client['peers'][0]['id']
-                                    break
-
-                            delete_payload['clientId'] = client_id
-
-                        async with session.delete(
-                            f'{API_URL}/{CLIENT_ENDPOINT}',
-                            json=delete_payload,
+                            headers=headers,
+                            json=create_payload,
                         ) as response:
 
-                            delete_success = True
+                            if response.status == 200:
+                                data = await response.json()
+                                vpn_key = data.get(
+                                    'client', {}
+                                ).get('config')
 
-                            if response.status not in (200, 400, 404):
+                                response_data['vpn_key'] = vpn_key
+
+                                if vpn_key is not None:
+                                    user = await User.get(
+                                        telegram_id=telegram_id
+                                    )
+                                    await VPNKeys.create(
+                                        key_text=vpn_key,
+                                        user_id=user,
+                                        protocol=protocol
+                                    )
+
+                            else:
                                 error_text = await response.text()
                                 logger.error(
                                     f'Ошибка сервера:{
@@ -212,48 +250,11 @@ async def create_user_config(
                                     }: '
                                     f'{error_text}'
                                 )
-                                response_data['error'] = 'delete_failed'
+                                response_data['error'] = 'create_failed'
 
-                                delete_success = False
-
-                        if delete_success is True:
-
-                            async with session.post(
-                                f'{API_URL}/{CLIENT_ENDPOINT}',
-                                json=create_payload,
-                            ) as response:
-
-                                if response.status == 200:
-                                    data = await response.json()
-                                    vpn_key = data.get(
-                                        'client', {}
-                                    ).get('config')
-
-                                    response_data['vpn_key'] = vpn_key
-
-                                    if vpn_key is not None:
-                                        user = await User.get(
-                                            telegram_id=telegram_id
-                                        )
-                                        await VPNKeys.create(
-                                            key_text=vpn_key,
-                                            user_id=user,
-                                            protocol=protocol
-                                        )
-
-                                else:
-                                    error_text = await response.text()
-                                    logger.error(
-                                        f'Ошибка сервера:{
-                                            response.status
-                                        }: '
-                                        f'{error_text}'
-                                    )
-                                    response_data['error'] = 'create_failed'
-
-                    except aiohttp.ClientError as e:
-                        logger.error(f'Ошибка сетевого подключения: {e}')
-                        response_data['error'] = 'create_failed'
+                except aiohttp.ClientError as e:
+                    logger.error(f'Ошибка сетевого подключения: {e}')
+                    response_data['error'] = 'create_failed'
 
             await channel.default_exchange.publish(
                 aio_pika.Message(
@@ -275,6 +276,8 @@ async def main():
     connection = await aio_pika.connect_robust(RABBITMQ_URL)
     channel = await connection.channel()
 
+    await channel.set_qos(prefetch_count=10)
+
     await channel.declare_queue(
         RESPONSE_QUEUE,
         durable=True
@@ -295,17 +298,25 @@ async def main():
         durable=True
     )
 
-    await queue.consume(lambda message: create_user_config(message, channel))
+    async with aiohttp.ClientSession() as session:
 
-    await zapret_queue.consume(
-        lambda message: get_zapret_release(message, channel)
-    )
+        await queue.consume(
+            lambda message: asyncio.create_task(
+                create_user_config(message, channel, session)
+            )
+        )
 
-    try:
-        await asyncio.Future()
-    finally:
-        await connection.close()
-        await close_db()
+        await zapret_queue.consume(
+            lambda message: asyncio.create_task(
+                get_zapret_release(message, channel, session)
+            )
+        )
+
+        try:
+            await asyncio.Future()
+        finally:
+            await connection.close()
+            await close_db()
 
 if __name__ == '__main__':
     asyncio.run(main())
